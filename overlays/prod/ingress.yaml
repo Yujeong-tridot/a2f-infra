@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: avadot-ingress
+  namespace: avadot-prod
+  annotations:
+    # ALB 기본 설정
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    # HTTP -> HTTPS 리다이렉트
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    # SSL 인증서 (ACM ARN - 발급 후 주석 해제)
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:247124030538:certificate/xxxxx
+    # WebSocket 및 로드밸런싱 설정
+    alb.ingress.kubernetes.io/target-group-attributes: 'deregistration_delay.timeout_seconds=30,stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400'
+spec:
+  ingressClassName: alb
+  rules:
+  # Backend REST API
+  - host: api.avadot.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 4008
+  # Tarot WebSocket
+  - host: tarot.avadot.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tarot
+            port:
+              number: 4007

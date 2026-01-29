@@ -7,6 +7,34 @@ namespace: avadot-prod
 resources:
   - ../../base/backend
   - ../../base/tarot
+  - ingress.yaml
+
+# Prod 환경용 패치
+patches:
+  - path: backend-command-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: backend-healthcheck-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: backend-env-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: tarot-command-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: tarot-healthcheck-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: tarot-env-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
 
 # Prod 환경 설정 (replica 수 등)
 replicas:
