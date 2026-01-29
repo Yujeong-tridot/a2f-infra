@@ -1,0 +1,59 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: avadot-local
+
+# Base 매니페스트 참조
+resources:
+  - ../../base/tarot
+  - ../../base/backend
+
+# 로컬 환경용 패치
+patches:
+  - path: tarot-nodeport.yaml
+    target:
+      kind: Service
+      name: tarot
+  - path: tarot-image-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: tarot-command-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: tarot-healthcheck-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: tarot-env-patch.yaml
+    target:
+      kind: Deployment
+      name: tarot
+  - path: backend-nodeport.yaml
+    target:
+      kind: Service
+      name: backend
+  - path: backend-image-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: backend-command-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: backend-healthcheck-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: backend-env-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+
+# Replica 수를 1개로 축소
+replicas:
+  - name: tarot
+    count: 1
+  - name: backend
+    count: 1

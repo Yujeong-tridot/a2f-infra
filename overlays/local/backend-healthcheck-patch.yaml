@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+      - name: backend
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4008
+            scheme: HTTP  # 로컬 테스트용 HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4008
+            scheme: HTTP  # 로컬 테스트용 HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 3

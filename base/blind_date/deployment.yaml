@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blind-date
+  labels:
+    app: blind-date
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: blind-date
+  template:
+    metadata:
+      labels:
+        app: blind-date
+    spec:
+      imagePullSecrets:
+      - name: ecr-secret
+      containers:
+      - name: blind-date
+        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/avadot-blind-date
+        ports:
+        - containerPort: 4010
+          name: websocket
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: redis-url
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: anthropic-api-key
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: openai-api-key
+        - name: ENABLE_LOGGING
+          value: "true"
+        - name: ENABLE_JSON_LOGGING
+          value: "false"
+        - name: ENVIRONMENT
+          value: "local"
+        - name: DEFAULT_MODEL
+          value: "claude"
+        - name: FALLBACK_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4010
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4010
+            scheme: HTTPS
+          initialDelaySeconds: 10
+          periodSeconds: 5

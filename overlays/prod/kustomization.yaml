@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: avadot-prod
+
+# Base 매니페스트 참조
+resources:
+  - ../../base/backend
+  - ../../base/tarot
+
+# Prod 환경 설정 (replica 수 등)
+replicas:
+  - name: backend
+    count: 2
+  - name: tarot
+    count: 2
