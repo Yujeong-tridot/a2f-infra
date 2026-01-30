@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2f-grpc-server
+  labels:
+    app: a2f-grpc-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2f-grpc-server
+  template:
+    metadata:
+      labels:
+        app: a2f-grpc-server
+    spec:
+      imagePullSecrets:
+      - name: ecr-secret
+      nodeSelector:
+        alpha.eksctl.io/nodegroup-name: avadot-node-gpu
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
+      initContainers:
+      - name: model-downloader
+        image: amazon/aws-cli:latest
+        command:
+        - sh
+        - -c
+        - |
+          if [ -f /data/models/multi-diffusion/model.json ]; then
+            echo "Models already exist, skipping download"
+          else
+            echo "Downloading models from S3..."
+            aws s3 sync s3://avadot/a2f-models/ /data/models/ --no-progress
+            echo "Download complete"
+          fi
+        volumeMounts:
+        - name: model-data
+          mountPath: /data/models
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      containers:
+      - name: a2f-grpc-server
+        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/a2f-grpc-server:20260130-52a6ae1
+        ports:
+        - containerPort: 50051
+          name: grpc
+        env:
+        - name: A2F_MODEL_DATA_PATH
+          value: "/data/models"
+        - name: A2F_MODEL_PATH
+          value: "/data/models/multi-diffusion/model.json"
+        - name: A2F_SDK_PATH
+          value: "/usr/local"
+        - name: A2F_LIB_PATH
+          value: "/usr/local/lib"
+        # TRT 빌드 제어 (선택적)
+        # - name: SKIP_TRT_BUILD
+        #   value: "1"
+        # - name: FORCE_TRT_REBUILD
+        #   value: "1"
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+            nvidia.com/gpu: 1
+        volumeMounts:
+        - name: model-data
+          mountPath: /data/models
+        # TRT 엔진 빌드 대기 (최대 10분)
+        startupProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          failureThreshold: 54
+          timeoutSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          failureThreshold: 3
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+          timeoutSeconds: 5
+      volumes:
+      - name: model-data
+        persistentVolumeClaim:
+          claimName: a2f-model-data
