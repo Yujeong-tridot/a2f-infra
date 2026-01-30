@@ -13,7 +13,8 @@ metadata:
     # SSL 인증서
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:247124030538:certificate/52e8e09e-eef6-4487-aeb8-8b12687b3f04
     # WebSocket 및 로드밸런싱 설정
-    alb.ingress.kubernetes.io/target-group-attributes: 'deregistration_delay.timeout_seconds=60,stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400,idle_timeout.timeout_seconds=3600'
+    alb.ingress.kubernetes.io/target-group-attributes: 'deregistration_delay.timeout_seconds=60,stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400'
+    alb.ingress.kubernetes.io/load-balancer-attributes: 'idle_timeout.timeout_seconds=3600'
 spec:
   ingressClassName: alb
   rules:
