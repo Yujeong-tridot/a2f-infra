@@ -86,7 +86,7 @@ spec:
           httpGet:
             path: /health
             port: 4007
-            scheme: HTTPS
+            scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 10
           failureThreshold: 3
@@ -94,7 +94,7 @@ spec:
           httpGet:
             path: /health
             port: 4007
-            scheme: HTTPS
+            scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 5
           failureThreshold: 3

@@ -83,13 +83,13 @@ spec:
           httpGet:
             path: /
             port: 4010
-            scheme: HTTPS
+            scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
             port: 4010
-            scheme: HTTPS
+            scheme: HTTP
           initialDelaySeconds: 10
           periodSeconds: 5

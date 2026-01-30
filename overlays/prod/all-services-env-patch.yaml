@@ -1,0 +1,215 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  template:
+    spec:
+      containers:
+      - name: backend
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tarot
+spec:
+  template:
+    spec:
+      containers:
+      - name: tarot
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blind-date
+spec:
+  template:
+    spec:
+      containers:
+      - name: blind-date
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: custom-chat
+spec:
+  template:
+    spec:
+      containers:
+      - name: custom-chat
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: concierge
+spec:
+  template:
+    spec:
+      containers:
+      - name: concierge
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fact-worker
+spec:
+  template:
+    spec:
+      containers:
+      - name: fact-worker
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-port
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-password
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: avadot-db-config
+              key: db-name

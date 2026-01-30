@@ -7,34 +7,18 @@ namespace: avadot-prod
 resources:
   - ../../base/backend
   - ../../base/tarot
+  - ../../base/blind_date
+  - ../../base/custom_chat
+  - ../../base/concierge
+  - ../../base/fact_worker
+  - ../../base/hpa
+  - ../../base/pdb
   - ingress.yaml
 
 # Prod 환경용 패치
-patches:
-  - path: backend-command-patch.yaml
-    target:
-      kind: Deployment
-      name: backend
-  - path: backend-healthcheck-patch.yaml
-    target:
-      kind: Deployment
-      name: backend
-  - path: backend-env-patch.yaml
-    target:
-      kind: Deployment
-      name: backend
-  - path: tarot-command-patch.yaml
-    target:
-      kind: Deployment
-      name: tarot
-  - path: tarot-healthcheck-patch.yaml
-    target:
-      kind: Deployment
-      name: tarot
-  - path: tarot-env-patch.yaml
-    target:
-      kind: Deployment
-      name: tarot
+patchesStrategicMerge:
+  - all-services-env-patch.yaml
+  - all-services-command-patch.yaml
 
 # Prod 환경 설정 (replica 수 등)
 replicas:
@@ -42,3 +26,11 @@ replicas:
     count: 2
   - name: tarot
     count: 2
+  - name: blind-date
+    count: 2
+  - name: custom-chat
+    count: 2
+  - name: concierge
+    count: 2
+  - name: fact-worker
+    count: 1
