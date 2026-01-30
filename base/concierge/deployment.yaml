@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blind-date
+  name: concierge
   labels:
-    app: blind-date
+    app: concierge
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: blind-date
+      app: concierge
   template:
     metadata:
       labels:
-        app: blind-date
+        app: concierge
     spec:
-      # WebSocket 노드에 배치 (t3.large만 사용)
+      # API + Worker 노드에 배치 (t3.large만 사용, RAG 집약적)
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -31,15 +31,15 @@ spec:
               - key: workload
                 operator: In
                 values:
-                - websocket
+                - api-worker
       terminationGracePeriodSeconds: 90
       imagePullSecrets:
       - name: ecr-secret
       containers:
-      - name: blind-date
-        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/avadot-blind-date
+      - name: concierge
+        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/avadot-concierge
         ports:
-        - containerPort: 4010
+        - containerPort: 4011
           name: websocket
         env:
         - name: DATABASE_URL
@@ -62,34 +62,54 @@ spec:
             secretKeyRef:
               name: avadot-secrets
               key: openai-api-key
+        - name: QDRANT_URL
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: qdrant-url
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: qdrant-api-key
+        - name: LANGCHAIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: langchain-api-key
         - name: ENABLE_LOGGING
           value: "true"
         - name: ENABLE_JSON_LOGGING
           value: "false"
         - name: ENVIRONMENT
           value: "local"
-        - name: DEFAULT_MODEL
-          value: "claude"
-        - name: FALLBACK_ENABLED
-          value: "true"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
             cpu: "500m"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 60
         livenessProbe:
           httpGet:
-            path: /
-            port: 4010
+            path: /health
+            port: 4011
             scheme: HTTPS
           initialDelaySeconds: 30
           periodSeconds: 10
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /
-            port: 4010
+            path: /health
+            port: 4011
             scheme: HTTPS
           initialDelaySeconds: 10
           periodSeconds: 5
+          failureThreshold: 3

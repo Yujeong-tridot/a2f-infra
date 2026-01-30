@@ -13,7 +13,7 @@ metadata:
     # SSL 인증서
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:247124030538:certificate/52e8e09e-eef6-4487-aeb8-8b12687b3f04
     # WebSocket 및 로드밸런싱 설정
-    alb.ingress.kubernetes.io/target-group-attributes: 'deregistration_delay.timeout_seconds=30,stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400'
+    alb.ingress.kubernetes.io/target-group-attributes: 'deregistration_delay.timeout_seconds=60,stickiness.enabled=true,stickiness.lb_cookie.duration_seconds=86400,idle_timeout.timeout_seconds=3600'
 spec:
   ingressClassName: alb
   rules:
@@ -39,3 +39,36 @@ spec:
             name: tarot
             port:
               number: 4007
+  # Blind Date WebSocket
+  - host: blinddate.avadot.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: blind-date
+            port:
+              number: 4010
+  # Custom Chat WebSocket
+  - host: chat.avadot.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: custom-chat
+            port:
+              number: 4009
+  # Concierge WebSocket
+  - host: concierge.avadot.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: concierge
+            port:
+              number: 4011

@@ -1,0 +1,54 @@
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: backend
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tarot-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: tarot
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: blind-date-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: blind-date
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: custom-chat-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: custom-chat
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: concierge-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: concierge

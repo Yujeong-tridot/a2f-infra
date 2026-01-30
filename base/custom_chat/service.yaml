@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: custom-chat
+  labels:
+    app: custom-chat
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4009
+    targetPort: 4009
+    protocol: TCP
+    name: websocket
+  selector:
+    app: custom-chat

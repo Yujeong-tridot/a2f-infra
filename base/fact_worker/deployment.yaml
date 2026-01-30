@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: blind-date
+  name: fact-worker
   labels:
-    app: blind-date
+    app: fact-worker
 spec:
-  replicas: 2
+  replicas: 1  # 백그라운드 워커는 1개만
   selector:
     matchLabels:
-      app: blind-date
+      app: fact-worker
   template:
     metadata:
       labels:
-        app: blind-date
+        app: fact-worker
     spec:
-      # WebSocket 노드에 배치 (t3.large만 사용)
+      # API + Worker 노드에 배치 (t3.large만 사용, CPU 집약적)
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -31,16 +31,13 @@ spec:
               - key: workload
                 operator: In
                 values:
-                - websocket
-      terminationGracePeriodSeconds: 90
+                - api-worker
+      terminationGracePeriodSeconds: 60
       imagePullSecrets:
       - name: ecr-secret
       containers:
-      - name: blind-date
-        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/avadot-blind-date
-        ports:
-        - containerPort: 4010
-          name: websocket
+      - name: fact-worker
+        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/avadot-fact-worker
         env:
         - name: DATABASE_URL
           valueFrom:
@@ -62,34 +59,38 @@ spec:
             secretKeyRef:
               name: avadot-secrets
               key: openai-api-key
+        - name: QDRANT_URL
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: qdrant-url
+        - name: QDRANT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: qdrant-api-key
+        - name: LANGCHAIN_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: langchain-api-key
         - name: ENABLE_LOGGING
           value: "true"
         - name: ENABLE_JSON_LOGGING
           value: "false"
         - name: ENVIRONMENT
           value: "local"
-        - name: DEFAULT_MODEL
-          value: "claude"
-        - name: FALLBACK_ENABLED
-          value: "true"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
-            cpu: "500m"
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 4010
-            scheme: HTTPS
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 4010
-            scheme: HTTPS
-          initialDelaySeconds: 10
-          periodSeconds: 5
+            cpu: "200m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - sleep 30
