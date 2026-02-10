@@ -14,24 +14,28 @@ Audio2Face Diffusion 모델 기반 gRPC 서버의 Kubernetes 배포 가이드입
 ## 아키텍처 개요
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     EKS Cluster                              │
-│                                                              │
-│  ┌────────────────────┐      ┌────────────────────────────┐ │
-│  │  Backend Pod       │      │  GPU Node (avadot-node-gpu)│ │
-│  │  (CPU Node)        │      │                            │ │
-│  │                    │      │  ┌──────────────────────┐  │ │
-│  │  avadot-backend    │─────▶│  │ a2f-grpc-server Pod  │  │ │
-│  │  :4008             │ gRPC │  │ :50051               │  │ │
-│  │                    │      │  │                      │  │ │
-│  └────────────────────┘      │  │ ┌──────────────────┐ │  │ │
-│                              │  │ │ PVC: model-data  │ │  │ │
-│                              │  │ │ /data/models     │ │  │ │
-│                              │  │ └──────────────────┘ │  │ │
-│                              │  └──────────────────────┘  │ │
-│                              └────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         EKS Cluster                              │
+│                                                                  │
+│  ┌────────────────────┐    ┌──────────────────────────────────┐ │
+│  │  Backend Pod       │    │  GPU Nodes (avadot-node-gpu × 2) │ │
+│  │  (CPU Node)        │    │                                  │ │
+│  │                    │    │  ┌────────────┐ ┌────────────┐   │ │
+│  │  avadot-backend    │───▶│  │ server-0   │ │ server-1   │   │ │
+│  │  :4008             │gRPC│  │ :50051     │ │ :50051     │   │ │
+│  │                    │    │  │ PVC: 50Gi  │ │ PVC: 50Gi  │   │ │
+│  └────────────────────┘    │  └────────────┘ └────────────┘   │ │
+│                            │                                  │ │
+│                            │  StatefulSet (replicas: 2)       │ │
+│                            │  PDB: minAvailable 1             │ │
+│                            └──────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+**핵심 구성**:
+- **StatefulSet**: Pod별 독립 PVC (volumeClaimTemplates)
+- **PDB**: minAvailable 1 → 노드 업데이트 시 1개 Pod 항상 유지
+- **Service**: ClusterIP (Ingress용) + Headless (StatefulSet DNS용)
 
 ## TensorRT 엔진 빌드
 
@@ -62,13 +66,18 @@ Audio2Face Diffusion 모델 기반 gRPC 서버의 Kubernetes 배포 가이드입
 ### 빌드 시간
 
 - 첫 배포 시: **5-10분** (TRT 엔진 빌드)
-- 이후 배포: **즉시** (캐시된 TRT 사용)
+- 이후 배포: **즉시** (PVC에 캐시된 TRT 사용)
 
 ### PVC 요구사항
 
-모델 데이터 PVC는 **쓰기 가능**해야 합니다:
-- TRT 엔진 파일 저장 (`network.trt`)
-- GPU 아키텍처 마커 파일 저장 (`.gpu_arch`)
+각 Pod이 독립 PVC를 가짐 (volumeClaimTemplates):
+- `model-data-a2f-grpc-server-0` (50Gi, gp2)
+- `model-data-a2f-grpc-server-1` (50Gi, gp2)
+
+PVC에 저장되는 내용:
+- 모델 데이터 (S3에서 initContainer가 다운로드)
+- TRT 엔진 파일 (`network.trt`) - 자동 생성
+- GPU 아키텍처 마커 (`.gpu_arch`) - 자동 생성
 
 ## 배포 전 준비사항
 
@@ -77,32 +86,22 @@ Audio2Face Diffusion 모델 기반 gRPC 서버의 Kubernetes 배포 가이드입
 ```bash
 # eksctl로 GPU 노드 그룹 추가
 eksctl create nodegroup \
-  --cluster avadot \
+  --cluster avadot-cluster \
   --name avadot-node-gpu \
   --node-type g4dn.xlarge \
-  --nodes 1 \
-  --nodes-min 1 \
+  --nodes 2 \
+  --nodes-min 2 \
   --nodes-max 2 \
   --node-labels "alpha.eksctl.io/nodegroup-name=avadot-node-gpu" \
   --install-nvidia-plugin
 ```
 
-### 2. 모델 데이터 업로드
+### 2. 모델 데이터
 
-PVC 생성 후 모델 데이터를 업로드해야 합니다:
-
-```bash
-# 임시 Pod으로 PVC에 데이터 복사
-kubectl run data-loader --image=busybox --restart=Never \
-  --overrides='{"spec":{"containers":[{"name":"data-loader","image":"busybox","command":["sleep","3600"],"volumeMounts":[{"name":"data","mountPath":"/data"}]}],"volumes":[{"name":"data","persistentVolumeClaim":{"claimName":"a2f-model-data"}}]}}'
-
-# 로컬에서 모델 데이터 복사
-kubectl cp ./models/multi-diffusion data-loader:/data/models/multi-diffusion
-kubectl cp ./models/a23 data-loader:/data/models/a23
-
-# 임시 Pod 삭제
-kubectl delete pod data-loader
-```
+initContainer가 S3에서 자동으로 모델을 다운로드합니다:
+- 소스: `s3://avadot/a2f-models/`
+- 대상: `/data/models/` (PVC)
+- 이미 존재하면 스킵
 
 ### 3. ECR 이미지 푸시
 
@@ -128,15 +127,26 @@ kubectl apply -k base/a2f-grpc-server --dry-run=client
 # 실제 배포
 kubectl apply -k base/a2f-grpc-server
 
-# 배포 상태 확인
+# 배포 상태 확인 (StatefulSet은 순차 배포: Pod 0 Ready → Pod 1 생성)
 kubectl get pods -l app=a2f-grpc-server -w
+
+# Pod이 서로 다른 노드에 배포되었는지 확인
+kubectl get pods -l app=a2f-grpc-server -o wide
+```
+
+### PDB 확인
+
+```bash
+kubectl get pdb a2f-grpc-server-pdb
+# ALLOWED DISRUPTIONS: 1 이면 정상
 ```
 
 ### 로그 확인
 
 ```bash
 # TRT 빌드 로그 (첫 배포 시)
-kubectl logs -l app=a2f-grpc-server -f
+kubectl logs a2f-grpc-server-0 -f
+kubectl logs a2f-grpc-server-1 -f
 
 # 로그에서 확인할 내용:
 # [entrypoint] Initializing A2F Server...
@@ -161,7 +171,7 @@ kubectl logs -l app=a2f-grpc-server -f
 ### Pod이 Pending 상태로 유지됨
 
 ```bash
-kubectl describe pod -l app=a2f-grpc-server
+kubectl describe pod a2f-grpc-server-0
 ```
 
 **원인 1: GPU 노드 없음**
@@ -176,17 +186,23 @@ Warning  FailedScheduling  node(s) didn't match Pod's node affinity/selector
 ```
 → 노드 레이블 확인: `kubectl get nodes --show-labels`
 
+**원인 3: volume node affinity conflict**
+```
+Warning  FailedScheduling  node(s) had volume node affinity conflict
+```
+→ PVC가 다른 AZ에 바인딩됨. StatefulSet의 volumeClaimTemplates는 Pod별 독립 PVC를 생성하므로 이 문제가 발생하지 않아야 함. 기존 PVC가 남아있다면 정리 필요.
+
 ### TRT 빌드 실패
 
 ```bash
-kubectl logs -l app=a2f-grpc-server | grep -i error
+kubectl logs a2f-grpc-server-0 | grep -i error
 ```
 
 **원인: ONNX 파일 없음**
 ```
 [entrypoint] ONNX not found: /data/models/multi-diffusion/network.onnx
 ```
-→ 모델 데이터 업로드 확인
+→ S3 모델 데이터 확인: `aws s3 ls s3://avadot/a2f-models/`
 
 **원인: GPU 메모리 부족**
 ```
@@ -205,30 +221,20 @@ kubectl run grpc-test --rm -it --image=fullstorydev/grpcurl \
   -- -plaintext a2f-grpc-server:50051 list
 ```
 
-### Startup Probe 실패 (300초 후)
+### Startup Probe 실패
 
-TRT 빌드가 예상보다 오래 걸리는 경우:
+TRT 빌드가 예상보다 오래 걸리는 경우 (현재 최대 10분):
 
 ```bash
 # Startup probe 타임아웃 증가
-kubectl patch deployment a2f-grpc-server --type='json' -p='[
-  {"op": "replace", "path": "/spec/template/spec/containers/0/startupProbe/failureThreshold", "value": 36}
+kubectl patch statefulset a2f-grpc-server --type='json' -p='[
+  {"op": "replace", "path": "/spec/template/spec/containers/0/startupProbe/failureThreshold", "value": 72}
 ]'
 ```
 
-### PVC 권한 문제
-
-```bash
-kubectl logs -l app=a2f-grpc-server | grep -i permission
-```
-
-TRT 파일 쓰기 실패 시:
-→ PVC가 ReadWriteOnce인지 확인
-→ 볼륨이 `:ro`로 마운트되지 않았는지 확인
-
 ## 모델 디렉토리 구조
 
-PVC 내부 예상 구조:
+각 Pod의 PVC 내부 구조:
 
 ```
 /data/models/

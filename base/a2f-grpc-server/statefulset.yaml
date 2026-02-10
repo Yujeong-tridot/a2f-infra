@@ -1,10 +1,11 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: a2f-grpc-server
   labels:
     app: a2f-grpc-server
 spec:
+  serviceName: a2f-grpc-server-headless
   replicas: 2
   selector:
     matchLabels:
@@ -100,7 +101,13 @@ spec:
           periodSeconds: 10
           failureThreshold: 3
           timeoutSeconds: 5
-      volumes:
-      - name: model-data
-        persistentVolumeClaim:
-          claimName: a2f-model-data
+  volumeClaimTemplates:
+  - metadata:
+      name: model-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: gp2
+      resources:
+        requests:
+          storage: 50Gi

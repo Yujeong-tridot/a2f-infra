@@ -1,0 +1,9 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: a2f-grpc-server-pdb
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: a2f-grpc-server
