@@ -15,6 +15,7 @@ spec:
       labels:
         app: a2f-grpc-server
     spec:
+      terminationGracePeriodSeconds: 60
       imagePullSecrets:
       - name: ecr-secret
       nodeSelector:
@@ -54,6 +55,8 @@ spec:
         - containerPort: 50051
           name: grpc
         env:
+        - name: ENVIRONMENT
+          value: "production"
         - name: A2F_MODEL_DATA_PATH
           value: "/data/models"
         - name: A2F_MODEL_PATH
@@ -79,25 +82,26 @@ spec:
         volumeMounts:
         - name: model-data
           mountPath: /data/models
-        # TRT 엔진 빌드 대기 (최대 10분)
+        # gRPC Health Checking Protocol probes (K8s 1.24+)
+        # Server implements grpc.health.v1.Health service:
+        #   - NOT_SERVING during TRT build / graceful shutdown
+        #   - SERVING when ready to accept requests
         startupProbe:
-          tcpSocket:
+          grpc:
             port: 50051
           initialDelaySeconds: 60
           periodSeconds: 10
           failureThreshold: 54
           timeoutSeconds: 5
         livenessProbe:
-          tcpSocket:
+          grpc:
             port: 50051
-          initialDelaySeconds: 10
           periodSeconds: 30
           failureThreshold: 3
           timeoutSeconds: 5
         readinessProbe:
-          tcpSocket:
+          grpc:
             port: 50051
-          initialDelaySeconds: 5
           periodSeconds: 10
           failureThreshold: 3
           timeoutSeconds: 5
