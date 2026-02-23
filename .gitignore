@@ -1,2 +1,5 @@
 avadot
 docs/handover-guide.md
+
+# Local overlay (개인 로컬 개발 환경)
+overlays/local/
