@@ -31,13 +31,9 @@ spec:
         - sh
         - -c
         - |
-          if [ -f /data/models/multi-diffusion/model.json ]; then
-            echo "Models already exist, skipping download"
-          else
-            echo "Downloading models from S3..."
-            aws s3 sync s3://avadot/a2f-models/ /data/models/ --no-progress
-            echo "Download complete"
-          fi
+          echo "Syncing models from S3..."
+          aws s3 sync s3://avadot/a2f-models/ /data/models/ --no-progress
+          echo "Sync complete"
         volumeMounts:
         - name: model-data
           mountPath: /data/models
