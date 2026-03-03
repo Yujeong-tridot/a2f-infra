@@ -77,6 +77,16 @@ spec:
             secretKeyRef:
               name: avadot-secrets
               key: langchain-api-key
+        - name: ELEVENLABS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: elevenlabs-api-key
+        - name: STEAM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: avadot-secrets
+              key: steam-api-key
         - name: ENABLE_LOGGING
           value: "true"
         - name: ENABLE_JSON_LOGGING
