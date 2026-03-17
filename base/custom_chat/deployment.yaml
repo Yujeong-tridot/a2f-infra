@@ -84,7 +84,7 @@ spec:
         - name: ENABLE_JSON_LOGGING
           value: "false"
         - name: ENVIRONMENT
-          value: "local"
+          value: "production"
         - name: DEFAULT_MODEL
           value: "claude"
         - name: FALLBACK_ENABLED
