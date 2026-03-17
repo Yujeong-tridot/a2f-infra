@@ -46,7 +46,7 @@ spec:
             cpu: "500m"
       containers:
       - name: a2f-grpc-server
-        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/a2f-grpc-server:20260130-52a6ae1
+        image: 247124030538.dkr.ecr.ap-northeast-2.amazonaws.com/a2f-grpc-server:39cac87608eb9fdca69a1b9ac5ddbb8049e3e961
         ports:
         - containerPort: 50051
           name: grpc
